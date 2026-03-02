@@ -1,0 +1,38 @@
+import os
+
+
+def _get_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _require(name: str) -> str:
+    value = os.getenv(name, "")
+    if value is None or value.strip() == "":
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
+
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = _get_int("DB_PORT", 3306)
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME = os.getenv("DB_NAME", "cep_public")
+
+# Path to MP3 files storage (inside container)
+MP3_FILES_PATH = os.getenv("MP3_FILES_PATH", "audio")
+
+# Base URL for audio files
+AUDIO_BASE_URL = os.getenv("AUDIO_BASE_URL", "http://localhost:8000")
+
+# API Authorization settings (required)
+API_KEY = _require("API_KEY")
+
+# Admin API connection settings (for import)
+ADMIN_API_URL = os.getenv("ADMIN_API_URL", "http://admin-api:8000")
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")

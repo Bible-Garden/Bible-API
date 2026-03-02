@@ -1,0 +1,141 @@
+# models.py
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
+
+# Languages & Translations
+
+class LanguageModel(BaseModel):
+    alias: str
+    name_en: str
+    name_national: str
+
+class VoiceModel(BaseModel):
+    code: int
+    alias: str
+    name: str
+    description: Optional[str] = None
+    is_music: bool
+    active: bool
+
+class TranslationModel(BaseModel):
+    code: int
+    alias: str
+    name: str
+    description: Optional[str] = None
+    language: str
+    active: bool
+    voices: list[VoiceModel]
+
+# TranslationInfo
+
+class BookInfoModel(BaseModel):
+    code: int
+    number: int
+    alias: str
+    name: str
+    chapters_count: int
+
+class TranslationInfoModel(BaseModel):
+    code: int
+    alias: str
+    name: str
+    description: Optional[str] = None
+    language: str
+    books_info: list[BookInfoModel]
+
+# ExcerptWithAlignment
+
+class VerseWithAlignmentModel(BaseModel):
+    code: int
+    number: int
+    join: int
+    text: str
+    html: str
+    begin: float
+    end: float
+    start_paragraph: bool
+
+class NoteModel(BaseModel):
+    code: int
+    number: int
+    text: str
+    verse_code: Optional[int] = None
+    title_code: Optional[int] = None
+    position_text: int
+    position_html: int
+
+class TitleModel(BaseModel):
+    code: int
+    text: str
+    before_verse_code: Optional[int] = None
+    metadata: Optional[str] = None
+    reference: Optional[str] = None
+    subtitle: bool = False
+    position_text: Optional[int] = None
+    position_html: Optional[int] = None
+
+class PartsWithAlignmentModel(BaseModel):
+    book: BookInfoModel
+    chapter_number: int
+    audio_link: str
+    prev_excerpt: str
+    next_excerpt: str
+    verses: list[VerseWithAlignmentModel]
+    notes: list[NoteModel]
+    titles: list[TitleModel]
+
+class ExcerptWithAlignmentModel(BaseModel):
+    title: str
+    is_single_chapter: bool
+    parts: list[PartsWithAlignmentModel]
+
+# Translation Books
+
+class TranslationBookModel(BaseModel):
+    code: int
+    book_number: int
+    name: str
+    alias: str
+    chapters_count: int
+    chapters_without_audio: list[int] = Field(default_factory=list)
+    chapters_without_text: list[int] = Field(default_factory=list)
+
+# Audio Error Models
+
+class AudioFileNotFoundError(BaseModel):
+    detail: str
+    alternative_url: Optional[str] = None
+
+# About
+
+class LocalizedText(BaseModel):
+    en: str
+    ru: str
+    uk: str
+
+class AboutContactModel(BaseModel):
+    id: str
+    icon: str
+    url: str
+    sort_order: int
+    label: LocalizedText
+    subtitle: LocalizedText
+
+class AboutModel(BaseModel):
+    contacts: list[AboutContactModel]
+    about_text: LocalizedText
+
+# Version Check
+
+class VersionCheckModel(BaseModel):
+    update_type: Literal["none", "soft", "hard"]
+    latest_version: str
+    store_url: str
+    message: Optional[LocalizedText] = None
+
+# Import
+
+class ImportReportModel(BaseModel):
+    status: str
+    translation: Optional[str] = None
+    tables: dict[str, int]
