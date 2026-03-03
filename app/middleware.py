@@ -7,6 +7,7 @@ from starlette.responses import Response
 from database import create_connection
 
 EXCLUDED_PATHS = {"/docs", "/openapi.json", "/redoc", "/favicon.ico"}
+EXCLUDED_STATUS_CODES = {403}
 
 # Normalize dynamic path segments for cleaner stats grouping
 _NORMALIZE_RULES = [
@@ -37,6 +38,9 @@ class RequestStatsMiddleware(BaseHTTPMiddleware):
         client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
 
         user_agent = (request.headers.get("user-agent") or "")[:512]
+
+        if response.status_code in EXCLUDED_STATUS_CODES:
+            return response
 
         endpoint = _normalize_endpoint(path)
 
