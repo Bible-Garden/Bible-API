@@ -26,7 +26,7 @@ def _normalize_endpoint(path: str) -> str:
 class RequestStatsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
-        if path in EXCLUDED_PATHS:
+        if path in EXCLUDED_PATHS or not path.startswith("/api/"):
             return await call_next(request)
 
         start = time.monotonic()
