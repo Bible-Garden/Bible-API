@@ -37,6 +37,27 @@ AGGREGATE_SQL = """
         error_count         = VALUES(error_count)
 """
 
+# Daily totals row: correct unique IPs across all endpoints for the day
+AGGREGATE_TOTAL_SQL = """
+    INSERT INTO api_request_daily_stats
+        (date, endpoint, request_count, unique_ips, avg_response_time_ms, error_count)
+    SELECT
+        DATE(created_at)         AS date,
+        '_total_'                AS endpoint,
+        COUNT(*)                 AS request_count,
+        COUNT(DISTINCT client_ip) AS unique_ips,
+        ROUND(AVG(response_time_ms)) AS avg_response_time_ms,
+        SUM(status_code >= 400)  AS error_count
+    FROM api_requests
+    WHERE DATE(created_at) = %s
+    GROUP BY DATE(created_at)
+    ON DUPLICATE KEY UPDATE
+        request_count       = VALUES(request_count),
+        unique_ips          = VALUES(unique_ips),
+        avg_response_time_ms = VALUES(avg_response_time_ms),
+        error_count         = VALUES(error_count)
+"""
+
 
 def aggregate_and_purge():
     connection = create_connection()
@@ -46,13 +67,15 @@ def aggregate_and_purge():
 
     cursor = connection.cursor()
     try:
-        # Find all past dates not yet aggregated (auto-backfill)
+        # Find all past dates needing aggregation or missing _total_ row
         cursor.execute("""
             SELECT DISTINCT DATE(created_at) AS d
             FROM api_requests
             WHERE DATE(created_at) < CURDATE()
-              AND DATE(created_at) NOT IN (
-                  SELECT DISTINCT date FROM api_request_daily_stats
+              AND (
+                  DATE(created_at) NOT IN (
+                      SELECT DISTINCT date FROM api_request_daily_stats WHERE endpoint = '_total_'
+                  )
               )
             ORDER BY d
         """)
@@ -65,7 +88,8 @@ def aggregate_and_purge():
             for d in dates:
                 cursor.execute(AGGREGATE_SQL, (d,))
                 total += cursor.rowcount
-                print(f"Aggregated {d}: {cursor.rowcount} endpoint rows")
+                cursor.execute(AGGREGATE_TOTAL_SQL, (d,))
+                print(f"Aggregated {d}: {cursor.rowcount + 1} rows")
             print(f"Total: {total} rows for {len(dates)} day(s)")
 
         # Purge raw rows older than 14 days
