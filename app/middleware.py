@@ -7,7 +7,7 @@ from starlette.responses import Response
 from database import create_connection
 
 EXCLUDED_PATHS = {"/docs", "/openapi.json", "/redoc", "/favicon.ico"}
-EXCLUDED_STATUS_CODES = {403}
+EXCLUDED_STATUS_CODES = {403, 404}
 
 # Normalize dynamic path segments for cleaner stats grouping
 _NORMALIZE_RULES = [
